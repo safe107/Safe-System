@@ -1,0 +1,68 @@
+name: SAFE CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: safe
+          POSTGRES_PASSWORD: ci-isolated-db-password
+          POSTGRES_DB: safe_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U safe -d safe_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_USERNAME: safe
+      DATABASE_PASSWORD: ci-isolated-db-password
+      DATABASE_URL: jdbc:postgresql://localhost:5432/safe_test
+      ADMIN_USERNAME: ci-admin
+      ADMIN_PASSWORD: ci-isolated-test-password-42
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: apps/api/pom.xml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: mvn -B -ntp -f apps/api/pom.xml verify
+      - run: npm ci --prefix apps/web
+      - run: npm --prefix apps/web run lint
+      - run: npm --prefix apps/web test
+      - run: npm --prefix apps/web run build
+      - run: npx --prefix apps/web playwright install --with-deps chromium
+      - name: Start isolated E2E database and API
+        run: |
+          PGPASSWORD="$DATABASE_PASSWORD" psql -h localhost -U safe -d safe_test -c 'CREATE DATABASE safe_e2e;'
+          DATABASE_URL=jdbc:postgresql://localhost:5432/safe_e2e java -jar apps/api/target/safe-api-0.1.0.jar > /tmp/api.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost:8080/actuator/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://localhost:8080/actuator/health
+      - name: Browser flows
+        working-directory: apps/web
+        run: |
+          npm run dev > /tmp/web.log 2>&1 &
+          export CHROMIUM_PATH=$(node --input-type=module -e "import {chromium} from '@playwright/test'; console.log(chromium.executablePath())")
+          npm run test:e2e
+      - name: Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            apps/api/target/surefire-reports
+            apps/web/playwright-report
+      - name: Docker build
+        run: docker build -f infra/docker/api.Dockerfile -t safe-api:ci .

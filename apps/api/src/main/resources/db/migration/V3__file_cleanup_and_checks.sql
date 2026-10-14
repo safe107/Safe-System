@@ -1,0 +1,14 @@
+CREATE TABLE file_deletion_jobs(storage_key varchar(255) PRIMARY KEY,created_at timestamptz NOT NULL DEFAULT now(),attempts integer NOT NULL DEFAULT 0);
+ALTER TABLE projects ADD CONSTRAINT project_status CHECK(status IN ('planned','in-progress','completed','archived'));
+ALTER TABLE courses ADD CONSTRAINT course_status CHECK(status IN ('planned','in-progress','completed','paused'));
+ALTER TABLE job_applications ADD CONSTRAINT application_status CHECK(status IN ('interest','sent','screening','interview','technical-test','offer','hired','rejected','withdrawn'));
+ALTER TABLE job_applications ADD CONSTRAINT salary_range CHECK(salary_min IS NULL OR salary_max IS NULL OR salary_min<=salary_max);
+ALTER TABLE projects ADD CONSTRAINT project_dates CHECK(started_at IS NULL OR completed_at IS NULL OR started_at<=completed_at);
+ALTER TABLE certificates ADD CONSTRAINT certificate_dates CHECK(issued_at IS NULL OR expires_at IS NULL OR issued_at<=expires_at);
+ALTER TABLE certificates ADD CONSTRAINT published_certificate_file CHECK(NOT published OR file_id IS NOT NULL);
+ALTER TABLE resumes ADD CONSTRAINT published_resume_file CHECK(NOT published OR file_id IS NOT NULL);
+ALTER TABLE resumes ADD CONSTRAINT primary_resume_public CHECK(NOT is_primary OR published);
+ALTER TABLE resumes ADD CONSTRAINT resume_locale CHECK(locale IN ('pt-BR','en'));
+ALTER TABLE experiences ADD CONSTRAINT experience_dates CHECK(started_at IS NULL OR ended_at IS NULL OR started_at<=ended_at);
+ALTER TABLE experiences ADD CONSTRAINT current_experience CHECK(NOT current OR ended_at IS NULL);
+ALTER TABLE courses ADD CONSTRAINT course_dates CHECK(started_at IS NULL OR completed_at IS NULL OR started_at<=completed_at);
