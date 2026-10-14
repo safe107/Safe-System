@@ -27,7 +27,7 @@ RUN npm run build
 
 FROM caddy:2.10.2 AS proxy
 FROM eclipse-temurin:21-jre
-RUN useradd -u 10001 -m safe && mkdir -p /data /site /config /app && chown -R safe:safe /data /config /app
+RUN useradd -u 10001 -m safe && mkdir -p /data/files /site /config /app && chown -R safe:safe /data /config /app
 COPY --from=proxy /usr/bin/caddy /usr/bin/caddy
 COPY --from=build /build/target/safe-api-0.1.0.jar /app/api.jar
 COPY --from=web /web/dist /site

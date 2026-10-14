@@ -16,6 +16,10 @@ infra/deployment/  # configuração Vercel
  docs/             # arquitetura, contratos, operação e roadmap
 ```
 
+## Usar gratuitamente no seu computador
+
+O modo local precisa apenas de Docker e roda site, painel, banco e arquivos sem serviços pagos. Siga [o guia simples para Windows, Linux e macOS](docs/USE-LOCAL.md).
+
 ## Acessar pela internet
 
 O repositório contém o código; o site precisa de hospedagem. Siga [o roteiro de publicação no Railway](docs/PUBLISH-RAILWAY.md) para criar o serviço, conectar PostgreSQL e armazenamento privado, e obter seu link de acesso. O painel estará em `/admin/login` no mesmo endereço do portfólio.
