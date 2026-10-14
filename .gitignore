@@ -10,3 +10,4 @@ test-results/
 *.log
 __pycache__/
 *.pyc
+*.tsbuildinfo
